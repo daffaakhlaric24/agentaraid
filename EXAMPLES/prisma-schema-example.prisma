@@ -1,0 +1,181 @@
+// Example: Prisma Schema (backend/prisma/schema.prisma)
+// This defines your database structure
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  name          String
+  phone         String?
+  bio           String?
+  avatar        String?
+  plan          String    @default("Basic") // Basic, Pro, Pro Max
+  tokens        Int       @default(0)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  properties    Property[]
+  leads         Lead[]
+  tasks         Task[]
+  socialAccounts SocialAccount[]
+  contentPosts  ContentPost[]
+  transactions  Transaction[]
+
+  @@map("users")
+}
+
+model Property {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  name        String
+  price       Int      // Store as number in cents or rupiah
+  address     String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  specs       PropertySpec?
+  images      PropertyImage[]
+  videos      PropertyVideo[]
+
+  @@map("properties")
+}
+
+model PropertySpec {
+  id        String   @id @default(cuid())
+  propertyId String  @unique @map("property_id")
+  lt        Int      // Land area in m²
+  lb        Int      // Build area in m²
+  rooms     Int      // Bedrooms
+  toilets   Int      // Bathrooms
+
+  property  Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@map("property_specs")
+}
+
+model PropertyImage {
+  id        String   @id @default(cuid())
+  propertyId String  @map("property_id")
+  url       String
+  order     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  property  Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@map("property_images")
+}
+
+model PropertyVideo {
+  id        String   @id @default(cuid())
+  propertyId String  @map("property_id")
+  url       String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  property  Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@map("property_videos")
+}
+
+model Lead {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  name      String
+  email     String?
+  phone     String?
+  source    String   // WhatsApp, Instagram, Website, etc.
+  message   String
+  status    String   @default("New") // New, Follow Up, Won, Lost
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("leads")
+}
+
+model Task {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  title     String
+  dueDate   DateTime @map("due_date")
+  source    String
+  priority  String   @default("Medium") // High, Medium, Low
+  completed Boolean  @default(false)
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("tasks")
+}
+
+model SocialAccount {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  platform     String   // Instagram, TikTok, Facebook, WhatsApp
+  handle       String
+  accessToken  String?  @map("access_token")
+  refreshToken String?  @map("refresh_token")
+  expiresAt    DateTime? @map("expires_at")
+  status       String   @default("connected") // connected, disconnected
+  lastSynced   DateTime? @map("last_synced")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("social_accounts")
+}
+
+model ContentPost {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  propertyId  String?  @map("property_id")
+  format      String   // post, story, reel
+  caption     String?
+  description String?
+  imageUrl    String?  @map("image_url")
+  scheduledAt DateTime? @map("scheduled_at")
+  publishedAt DateTime? @map("published_at")
+  status      String   @default("draft") // draft, scheduled, published
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("content_posts")
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  type        String   // subscription, token_purchase, listing_purchase, account_purchase
+  amount      Int      // Amount in rupiah
+  tokens      Int?     // Tokens purchased/used
+  status      String   @default("pending") // pending, completed, failed
+  paymentMethod String? @map("payment_method")
+  paymentId   String?  @map("payment_id") // Midtrans/Stripe transaction ID
+  voucherCode String?  @map("voucher_code")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("transactions")
+}
+
+

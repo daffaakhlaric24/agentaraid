@@ -1,0 +1,9 @@
+{
+  "name": "Agentara",
+  "description": "A premium sales enablement and management dashboard for real estate professionals.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}
